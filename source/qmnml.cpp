@@ -16,13 +16,13 @@ bool Value::contains(const QString& key) const
 
 Value& Value::operator=(const Variant& data)
 {
-    value_ = data;
+    data_ = data;
     return *this;
 }
 
 Value& Value::operator=(const VariantEx& data)
 {
-    value_ = data.val;
+    data_ = data.val;
     comment_ = data.comment;
     return *this;
 }
@@ -66,11 +66,8 @@ QString Value::dump() const
 QTextStream& operator<<(QTextStream& stream, const Value& nml)
 {
     stream << nml.key_ << " = ";
-    std::visit(Visitor {
-                   [&stream](bool val) { stream << QString(".%1.").arg(val ? "true" : "false"); },
-                   [&stream](int val) { stream << val; },
-                   [&stream](double val) { stream << val; },
-                   [&stream](QString val) { stream << QString("\"%1\"").arg(val); },
+    std::visit(Visitor { [&stream](bool val) { stream << QString(".%1.").arg(val ? "true" : "false"); }, [&stream](int val) { stream << val; },
+                   [&stream](double val) { stream << val; }, [&stream](QString val) { stream << QString("\"%1\"").arg(val); },
                    [&stream](const QList<bool>& val) {
                        for (auto it = val.cbegin(); it != val.cend(); ++it) {
                            if (it != val.cbegin()) {
@@ -104,11 +101,27 @@ QTextStream& operator<<(QTextStream& stream, const Value& nml)
                        }
                    },
                    [](auto) {} },
-        nml.value_);
+        nml.data_);
     if (!nml.comment_.isEmpty()) {
         stream << " ! " << nml.comment_;
     }
     return stream;
+}
+
+Value::Type Value::type() const
+{
+    // clang-format off
+    return std::visit(Visitor { 
+        [](bool) { return Type::Boolean; },
+        [](int) { return Type::Integer; },
+        [](double) { return Type::Double; },
+        [](QString) { return Type::String; },
+        [](const QList<bool>&) { return Type::BooleanList; },
+        [](const QList<int>&) { return Type::IntegerList; },
+        [](const QList<double>&) { return Type::DoubleList; },
+        [](const QList<QString>&) { return Type::StringList; },
+        [](auto) { return Type::None; } }, data_);
+    // clang-format on
 }
 
 Value parse(const QString& text)
@@ -117,10 +130,12 @@ Value parse(const QString& text)
     Value* current = nullptr;
     const auto lines = text.split('\n');
 
-    enum class Type { Bool,
+    enum class Type {
+        Bool,
         Int,
         Double,
-        String };
+        String
+    };
 
     auto detectType = [](const QString& token) {
         const auto trimmed = token.trimmed();
@@ -271,4 +286,4 @@ Value parse(const QString& text)
     return res;
 }
 
-}
+} // namespace qmnml

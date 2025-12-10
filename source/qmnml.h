@@ -10,13 +10,11 @@ class QTextStream;
 
 namespace qmnml {
 
-template <typename... Ts>
-struct Visitor : Ts... {
+template <typename... Ts> struct Visitor : Ts... {
     using Ts::operator()...;
 };
 
-template <typename... Ts>
-Visitor(Ts...) -> Visitor<Ts...>;
+template <typename... Ts> Visitor(Ts...) -> Visitor<Ts...>;
 
 using Variant = std::variant<std::monostate, bool, int, double, QString, QList<bool>, QList<int>, QList<double>, QList<QString>>;
 
@@ -25,20 +23,29 @@ struct VariantEx {
     QString comment;
 };
 
-template <typename T, typename V>
-struct is_support_t : std::false_type { };
+template <typename T, typename V> struct is_support_t : std::false_type { };
 
-template <typename T, typename... Ts>
-struct is_support_t<T, std::variant<Ts...>> : std::bool_constant<(std::is_same_v<T, Ts> || ...)> { };
+template <typename T, typename... Ts> struct is_support_t<T, std::variant<Ts...>> : std::bool_constant<(std::is_same_v<T, Ts> || ...)> { };
 
-template <typename T, typename V>
-inline constexpr bool is_support_v = is_support_t<T, V>::value;
+template <typename T, typename V> inline constexpr bool is_support_v = is_support_t<T, V>::value;
 
 template <typename T>
 concept is_support = is_support_v<T, Variant>;
 
 class Value {
 public:
+    enum class Type : uint8_t {
+        None = 0,
+        Boolean,
+        Integer,
+        Double,
+        String,
+        BooleanList,
+        IntegerList,
+        DoubleList,
+        StringList,
+    };
+
     explicit Value(const QString& key = "General");
 
     bool contains(const QString& key) const;
@@ -47,8 +54,8 @@ public:
         requires is_support<T>
     T as_(const std::optional<T>& def = std::nullopt) const
     {
-        if (std::holds_alternative<T>(value_)) {
-            return std::get<T>(value_);
+        if (std::holds_alternative<T>(data_)) {
+            return std::get<T>(data_);
         } else if (def.has_value()) {
             return *def;
         }
@@ -62,7 +69,7 @@ public:
         requires is_support<T>
     Value& operator=(const std::initializer_list<T>& data)
     {
-        value_ = QList<T>(data);
+        data_ = QList<T>(data);
         return *this;
     }
 
@@ -74,13 +81,15 @@ public:
 
     QString dump() const;
 
+    Type type() const;
+
 private:
     friend QTextStream& operator<<(QTextStream& stream, const Value& nml);
 
 private:
     QString key_;
     QString comment_;
-    Variant value_;
+    Variant data_;
     std::map<QString, Value> children_;
 };
 
@@ -93,4 +102,4 @@ Value parse(const QString& text);
 
 QTextStream& operator<<(QTextStream& stream, const Value& nml);
 
-}
+} // namespace qmnml
