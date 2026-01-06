@@ -50,16 +50,21 @@ QString Value::dump() const
     QString buffer;
     QTextStream stream(&buffer);
 
-    if (children_.empty()) {
-        stream << *this;
-        return buffer;
-    }
+    std::function<void(const Value&, int)> dumpNode = [&stream, &dumpNode](const Value& node, int level) {
+        if (node.children_.empty()) {
+            stream << QString(level, ' ') << node << "\n";
+            return;
+        }
 
-    stream << "&" << key_ << "\r\n";
+        stream << "&" << node.key_ << "\n";
+        for (const auto [_, child] : node.children_) {
+            dumpNode(child, level + 2);
+        }
+        stream << "/\n";
+    };
     for (const auto [_, child] : children_) {
-        stream << child << "\r\n";
+        dumpNode(child, 0);
     }
-    stream << "/\r\n";
     return buffer;
 }
 
