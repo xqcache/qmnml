@@ -46,7 +46,12 @@ public:
         StringList,
     };
 
-    explicit Value(const QString& key = "General");
+    Value();
+    explicit Value(const QString& key);
+    Value(Value&& other);
+    Value& operator=(Value&& other);
+    Value(const Value& other) = default;
+    Value& operator=(const Value& other) = default;
 
     bool contains(const QString& key) const;
 
@@ -82,6 +87,7 @@ public:
     QString dump() const;
 
     Type type() const;
+    bool isNull() const;
 
 private:
     friend QTextStream& operator<<(QTextStream& stream, const Value& nml);
@@ -96,6 +102,11 @@ private:
 inline QString Value::key() const
 {
     return key_;
+}
+
+inline bool Value::isNull() const
+{
+    return type() == Type::None;
 }
 
 Value parse(const QString& text);

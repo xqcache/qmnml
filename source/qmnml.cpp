@@ -4,9 +4,34 @@
 
 namespace qmnml {
 
+Value::Value()
+    : key_("General")
+{
+}
+
 Value::Value(const QString& key)
     : key_(key)
 {
+}
+
+Value::Value(Value&& other)
+{
+    key_ = std::move(other.key_);
+    comment_ = std::move(other.comment_);
+    data_ = std::move(other.data_);
+    children_ = std::move(other.children_);
+}
+
+Value& Value::operator=(Value&& other)
+{
+    if (this == &other) {
+        return *this;
+    }
+    key_ = std::move(other.key_);
+    comment_ = std::move(other.comment_);
+    data_ = std::move(other.data_);
+    children_ = std::move(other.children_);
+    return *this;
 }
 
 bool Value::contains(const QString& key) const
@@ -57,12 +82,12 @@ QString Value::dump() const
         }
 
         stream << "&" << node.key_ << "\n";
-        for (const auto [_, child] : node.children_) {
+        for (const auto& [_, child] : node.children_) {
             dumpNode(child, level + 2);
         }
         stream << "/\n";
     };
-    for (const auto [_, child] : children_) {
+    for (const auto& [_, child] : children_) {
         dumpNode(child, 0);
     }
     return buffer;
