@@ -89,10 +89,15 @@ public:
     Type type() const;
     bool isNull() const;
 
+    bool isDirty() const;
+    void setDirty(bool dirty = true);
+    void resetDirty();
+
 private:
     friend QTextStream& operator<<(QTextStream& stream, const Value& nml);
 
 private:
+    bool dirty_ { false };
     QString key_;
     QString comment_;
     Variant data_;

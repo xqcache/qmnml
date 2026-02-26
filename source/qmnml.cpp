@@ -20,6 +20,7 @@ Value::Value(Value&& other)
     comment_ = std::move(other.comment_);
     data_ = std::move(other.data_);
     children_ = std::move(other.children_);
+    setDirty();
 }
 
 Value& Value::operator=(Value&& other)
@@ -31,6 +32,7 @@ Value& Value::operator=(Value&& other)
     comment_ = std::move(other.comment_);
     data_ = std::move(other.data_);
     children_ = std::move(other.children_);
+    setDirty();
     return *this;
 }
 
@@ -42,6 +44,7 @@ bool Value::contains(const QString& key) const
 Value& Value::operator=(const Variant& data)
 {
     data_ = data;
+    setDirty();
     return *this;
 }
 
@@ -49,11 +52,16 @@ Value& Value::operator=(const VariantEx& data)
 {
     data_ = data.val;
     comment_ = data.comment;
+    setDirty();
+
     return *this;
 }
 
 Value& Value::operator[](const QString& key)
 {
+    if (!children_.contains(key)) {
+        setDirty();
+    }
     auto& child = children_[key];
     child.key_ = key;
     return child;
@@ -152,6 +160,21 @@ Value::Type Value::type() const
         [](const QList<QString>&) { return Type::StringList; },
         [](auto) { return Type::None; } }, data_);
     // clang-format on
+}
+
+bool Value::isDirty() const
+{
+    return dirty_;
+}
+
+void Value::setDirty(bool dirty)
+{
+    dirty_ = dirty;
+}
+
+void Value::resetDirty()
+{
+    dirty_ = false;
 }
 
 Value parse(const QString& text)
