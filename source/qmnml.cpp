@@ -135,7 +135,7 @@ QTextStream& operator<<(QTextStream& stream, const Value& nml)
                            if (it != val.cbegin()) {
                                stream << ", ";
                            }
-                           stream << QString("\"%1\"").arg(*it);
+                           stream << QString("'%1'").arg(*it);
                        }
                    },
                    [](auto) {} },
@@ -193,7 +193,7 @@ Value parse(const QString& text)
     auto detectType = [](const QString& token) {
         const auto trimmed = token.trimmed();
         const auto lower = trimmed.toLower();
-        if (trimmed.size() >= 2 && trimmed.front() == '"' && trimmed.back() == '"') {
+        if (trimmed.size() >= 2 && ((trimmed.front() == '"' && trimmed.back() == '"') || (trimmed.front() == '\'' && trimmed.back() == '\''))) {
             return Type::String;
         }
         if (lower == ".true." || lower == ".false.") {
@@ -206,7 +206,7 @@ Value parse(const QString& text)
     };
 
     auto stripQuotes = [](const QString& token) {
-        if (token.size() >= 2 && token.front() == '"' && token.back() == '"') {
+        if (token.size() >= 2 && ((token.front() == '"' && token.back() == '"') || (token.front() == '\'' && token.back() == '\''))) {
             return token.mid(1, token.size() - 2);
         }
         return token;
